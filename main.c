@@ -73,7 +73,9 @@ void innerreverse(uint32_t board[4][4]){
 }
 
 void add(uint32_t board[4][4]) {
-  uint32_t n = xorshift128() % countZero(board);
+  uint32_t z = countZero(board);
+  if (z == 0) return;
+  uint32_t n = xorshift128() % z;
   uint32_t v = xorshift128() % 10 == 0 ? 4 : 2;
 
   for (uint32_t i=0; i<4; i++){
@@ -126,9 +128,9 @@ bool merge(uint32_t board[4][4]) {
           if (board[i][k] != 0){
             board[i][j] = board[i][k];
             board[i][k] = 0;
+            ret = true;
             break;
           }
-          ret = true;
         }
       }
     }
@@ -151,9 +153,9 @@ bool merge(uint32_t board[4][4]) {
           if (board[i][k] != 0){
             board[i][j] = board[i][k];
             board[i][k] = 0;
+            ret = true;
             break;
           }
-          ret = true;
         }
       }
     }
@@ -180,17 +182,36 @@ int32_t evaluate(uint32_t board[4][4], uint32_t direction){
 
   if (!move(directionboard, direction)) return -1;
   zerocells = countZero(directionboard);
-  if (zerocells == 0) return 0;
-  if (cleared(directionboard)) return zerocells;
+  add(directionboard);
 
   for (uint32_t i = 0; i < sampling; ++i) {
     memcpy(samplingboard, directionboard, sizeof(uint32_t) * 16);
     for (uint32_t j = 0; j < depth; ++j) {
+      /* / 100 */
+      /* if (move(samplingboard, xorshift128() % 4)) { */
+      /*   add(samplingboard); */
+      /* } else { */
+      /*   if (countZero(samplingboard) == 0) break; */
+      /*   -- j; */
+      /* } */
+
+      /* 61 / 100 */
       if (move(samplingboard, xorshift128() % 4)) {
         add(samplingboard);
       } else {
         if (countZero(samplingboard) == 0) break;
       }
+
+      /* ~60 / 100 */
+      /* move(samplingboard, xorshift128() % 4); */
+      /* if (countZero(samplingboard) == 0) break; */
+      /* add(samplingboard); */
+
+      /* 44 / 100 */
+      /* move(samplingboard, xorshift128() % 4); */
+      /* add(samplingboard); */
+      /* if (countZero(samplingboard) == 0) break; */
+
     }
     count += countZero(samplingboard);
   }
@@ -216,8 +237,13 @@ int main(int argc, char const* argv[])
 {
   x = clock();
 
-  depth = 10;
-  sampling = 500;
+  if (argc == 3) {
+    sscanf (argv[1],"%d",&depth);
+    sscanf (argv[2],"%d",&sampling);
+  } else {
+    depth = 15;
+    sampling = 500;
+  }
 
   uint32_t board[4][4] = {
     {0, 0, 0, 0},
@@ -232,7 +258,7 @@ int main(int argc, char const* argv[])
     if (cleared(board)) break;
     if (countZero(board) == 0) break;
   }
-  print(board);
+  if (countZero(board) == 0) return 1;
 
   return 0;
 }
