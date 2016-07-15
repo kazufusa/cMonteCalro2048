@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 #include <time.h>
 
 uint32_t x=123456789;
@@ -63,12 +64,16 @@ void transposition(uint32_t board[4][4]){
 void innerreverse(uint32_t board[4][4]){
   uint32_t tmp;
   for (uint32_t i=0; i<4; i++){
-    tmp = board[i][0];
-    board[i][0] = board[i][3];
-    board[i][3] = tmp;
-    tmp = board[i][1];
-    board[i][1] = board[i][2];
-    board[i][2] = tmp;
+    if (board[i][0] != board[i][3]){
+      tmp = board[i][0];
+      board[i][0] = board[i][3];
+      board[i][3] = tmp;
+    }
+    if (board[i][1] != board[i][2]){
+      tmp = board[i][1];
+      board[i][1] = board[i][2];
+      board[i][2] = tmp;
+    }
   }
 }
 
@@ -164,12 +169,51 @@ bool merge(uint32_t board[4][4]) {
   return ret;
 }
 
+bool mergeable(uint32_t board[4][4]) {
+  for (uint32_t i=0; i<4; i++){
+    for (uint32_t j=0; j<3; j++){
+      if (board[i][j] == 0){
+        for (uint32_t k=j+1; k<4; k++){
+          if (board[i][k] != 0) return true;
+        }
+      }
+    }
+  }
+
+  for (uint32_t i=0; i<4; i++){
+    for (uint32_t j=0; j<3; j++){
+      if (board[i][j] > 0 && board[i][j] == board[i][j+1]) return true;
+    }
+  }
+  return false;
+}
+
+bool movable(uint32_t board[4][4], uint32_t direction) {
+  uint32_t b[4][4];
+  memcpy(b, board, sizeof(uint32_t) * 16);
+  preprocess(b, direction);
+  return mergeable(b);
+}
+
 bool move(uint32_t board[4][4], uint32_t direction) {
   bool ret;
   preprocess(board, direction);
   ret = merge(board);
   postprocess(board, direction);
   return ret;
+}
+
+bool randommove(uint32_t board[4][4]) {
+  uint32_t directions[4];
+  uint32_t n = 0;
+  for (int i = 0; i < 4; i++) {
+    if(movable(board, i)) {
+      directions[n] = i;
+      ++n;
+    }
+  }
+  if (n == 0) return false;
+  return move(board, directions[xorshift128() % n]);
 }
 
 int32_t evaluate(uint32_t board[4][4], uint32_t direction){
@@ -187,20 +231,19 @@ int32_t evaluate(uint32_t board[4][4], uint32_t direction){
   for (uint32_t i = 0; i < sampling; ++i) {
     memcpy(samplingboard, directionboard, sizeof(uint32_t) * 16);
     for (uint32_t j = 0; j < depth; ++j) {
-      /* / 100 */
+      /* ~80 / 100 */
+      if (randommove(samplingboard)) {
+        add(samplingboard);
+      } else {
+        break;
+      }
+
+      /* ~60 / 100 */
       /* if (move(samplingboard, xorshift128() % 4)) { */
       /*   add(samplingboard); */
       /* } else { */
       /*   if (countZero(samplingboard) == 0) break; */
-      /*   -- j; */
       /* } */
-
-      /* 61 / 100 */
-      if (move(samplingboard, xorshift128() % 4)) {
-        add(samplingboard);
-      } else {
-        if (countZero(samplingboard) == 0) break;
-      }
 
       /* ~60 / 100 */
       /* move(samplingboard, xorshift128() % 4); */
