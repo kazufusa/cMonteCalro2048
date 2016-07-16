@@ -13,4 +13,4 @@ for i in `seq 1 $size`; do
 done
 wait
 echo $1 $2 `cat count.txt | grep -o 0 | wc -l` '/' $size
-rm -rf count.txt
+# rm -rf count.txt

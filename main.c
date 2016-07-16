@@ -219,41 +219,26 @@ bool randommove(uint32_t board[4][4]) {
 int32_t evaluate(uint32_t board[4][4], uint32_t direction){
   uint32_t directionboard[4][4];
   uint32_t samplingboard[4][4];
-  uint32_t zerocells = 0;
   uint32_t count = 0;
 
   memcpy(directionboard, board, sizeof(uint32_t) * 16);
 
   if (!move(directionboard, direction)) return -1;
-  zerocells = countZero(directionboard);
-  add(directionboard);
 
   for (uint32_t i = 0; i < sampling; ++i) {
     memcpy(samplingboard, directionboard, sizeof(uint32_t) * 16);
     for (uint32_t j = 0; j < depth; ++j) {
-      /* ~80 / 100 */
-      if (randommove(samplingboard)) {
-        add(samplingboard);
-      } else {
-        break;
-      }
+      /* 958 / 1000 without (1), d:10, s:500 */
+      add(samplingboard);
+      if (!randommove(samplingboard)) break;
 
-      /* ~60 / 100 */
-      /* if (move(samplingboard, xorshift128() % 4)) { */
-      /*   add(samplingboard); */
+      /* 950 / 1000 without (1), d:10, s:500 */
+      /* add(samplingboard); */
+      /* if (randommove(samplingboard)) { */
+      /*   if (cleared(samplingboard)) break; */
       /* } else { */
-      /*   if (countZero(samplingboard) == 0) break; */
+      /*   break; */
       /* } */
-
-      /* ~60 / 100 */
-      /* move(samplingboard, xorshift128() % 4); */
-      /* if (countZero(samplingboard) == 0) break; */
-      /* add(samplingboard); */
-
-      /* 44 / 100 */
-      /* move(samplingboard, xorshift128() % 4); */
-      /* add(samplingboard); */
-      /* if (countZero(samplingboard) == 0) break; */
 
     }
     count += countZero(samplingboard);
@@ -284,7 +269,7 @@ int main(int argc, char const* argv[])
     sscanf (argv[1],"%d",&depth);
     sscanf (argv[2],"%d",&sampling);
   } else {
-    depth = 15;
+    depth = 10;
     sampling = 500;
   }
 
